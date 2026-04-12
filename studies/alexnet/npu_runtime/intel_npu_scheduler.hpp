@@ -8,7 +8,8 @@
 
 namespace intel_npu {
 
-using i32 = std::int32_t;
+struct NpuGraphIR;
+struct PassLog;
 
 struct Conv2DParams {
     i32 stride_h = 1;
@@ -21,6 +22,13 @@ struct Conv2DParams {
 
 enum class OpKind {
     CONV2D,
+    RELU,
+    CLAMP,
+    MAXPOOL,
+    DROPOUT,
+    IDENTITY,
+    FALLBACK,
+    LRN,
 };
 
 struct TensorDesc {
@@ -46,6 +54,8 @@ struct GraphOpDesc {
     u32 weight_tensor_id = 0;
     u32 output_tensor_id = 0;
     Conv2DParams conv;
+    float clamp_min = 0.0f;
+    float clamp_max = 0.0f;
 };
 
 struct GraphDesc {
@@ -87,6 +97,8 @@ struct TileMemoryPlan {
     LocalAlloc output_tile;
     bool reuses_producer_sram = false;
     u32 reused_from_tile_id = 0;
+    i32 lifetime_begin = 0;
+    i32 lifetime_end = 0;
 };
 
 struct ConvTileContract {
@@ -95,6 +107,9 @@ struct ConvTileContract {
     u32 weight_tensor_id = 0;
     u32 output_tensor_id = 0;
     Conv2DParams params;
+    PostOpKind post_op = PostOpKind::NONE;
+    float clamp_min = 0.0f;
+    float clamp_max = 0.0f;
     TileRegion input_region;
     TileRegion weight_region;
     TileRegion output_region;
@@ -103,6 +118,21 @@ struct ConvTileContract {
     std::vector<u32> signal_barriers;
     std::vector<u32> producer_tile_ids;
     std::vector<u32> consumer_tile_ids;
+};
+
+struct NpuExecutableStage {
+    i32 stage_id = 0;
+    u32 source_op_id = 0;
+    OpKind kind = OpKind::CONV2D;
+    u32 input_tensor_id = 0;
+    u32 weight_tensor_id = 0;
+    u32 output_tensor_id = 0;
+    Conv2DParams conv;
+    PostOpKind post_op = PostOpKind::NONE;
+    float clamp_min = 0.0f;
+    float clamp_max = 0.0f;
+    bool is_fallback_stage = false;
+    std::string debug_name;
 };
 
 struct SchedulerValidationResult {
@@ -114,15 +144,25 @@ struct SchedulerValidationResult {
 
 class GraphTileScheduler {
 public:
+    static std::vector<NpuExecutableStage> build_stage_sequence(const NpuGraphIR& graph, PassLog* log = nullptr);
+
+    static std::vector<ConvTileContract> schedule_from_ir(
+        const NpuGraphIR& graph,
+        const TensorTable& tensors,
+        const HardwareCaps& hw,
+        PassLog* log = nullptr);
+
     static std::vector<ConvTileContract> schedule_two_conv_chain(
         const GraphDesc& graph,
         const TensorTable& tensors,
         const HardwareCaps& hw);
 };
 
+bool run_memory_planning_pass(std::vector<ConvTileContract>& tiles, const HardwareCaps& hw, PassLog* log);
 SchedulerValidationResult validate_barrier_schedule(const std::vector<ConvTileContract>& tiles);
 
 TensorTable make_demo_tensors_p2();
 GraphDesc make_demo_graph_p2();
+GraphDesc make_compiler_demo_graph();
 
 }  // namespace intel_npu

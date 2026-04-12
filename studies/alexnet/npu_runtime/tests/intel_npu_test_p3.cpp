@@ -1,4 +1,5 @@
 #include "intel_npu_pipeline.hpp"
+#include "ir/npu_ir.hpp"
 
 #include <cassert>
 #include <iomanip>
@@ -15,9 +16,17 @@ int main() {
     hw.max_tile_w = 16;
     hw.max_tile_c = 64;
 
+    PassLog log;
     const auto tensors = make_demo_tensors_p2();
-    const auto graph = make_demo_graph_p2();
-    const auto contracts = GraphTileScheduler::schedule_two_conv_chain(graph, tensors, hw);
+    const auto graph = make_compiler_demo_graph();
+    auto ir = lower_graph_desc_to_npu_ir(graph, tensors);
+    run_strip_dropout_pass(ir, &log);
+    run_fuse_activation_pass(ir, &log);
+    run_decompose_unsupported_pass(ir, UnsupportedPolicy::FALLBACK, &log);
+    run_canonicalize_pass(ir, &log);
+
+    auto contracts = GraphTileScheduler::schedule_from_ir(ir, tensors, hw, &log);
+    run_memory_planning_pass(contracts, hw, &log);
     const auto commands = lower_graph_stream(contracts, tensors);
 
     assert(!commands.empty());
@@ -44,21 +53,29 @@ int main() {
     assert(saw_bank1_load);
     assert(saw_triplet_pattern);
 
-    PipelineRuntime runtime(hw);
-    runtime.install_barriers(contracts);
-    const auto stats = runtime.run(commands);
+    PipelineRuntime runtime_a(hw);
+    runtime_a.install_barriers(contracts);
+    const auto stats_a = runtime_a.run(commands);
+    const auto trace_a = dump_command_trace(runtime_a.trace());
 
-    assert(stats.compute_tiles > 0);
-    assert(stats.dma_load_bytes > 0);
-    assert(stats.total_cycles > 0);
-    assert(stats.dma_compute_overlap_cycles > 0);
-    assert(stats.overlap_percent > 0.0);
-    assert(stats.overlap_percent <= 100.0);
+    PipelineRuntime runtime_b(hw);
+    runtime_b.install_barriers(contracts);
+    const auto stats_b = runtime_b.run(commands);
+    const auto trace_b = dump_command_trace(runtime_b.trace());
+
+    assert(stats_a.compute_tiles > 0);
+    assert(stats_a.dma_load_bytes > 0);
+    assert(stats_a.total_cycles > 0);
+    assert(stats_a.dma_compute_overlap_cycles > 0);
+    assert(stats_a.overlap_percent > 0.0);
+    assert(stats_a.overlap_percent <= 100.0);
+    assert(stats_a.total_cycles == stats_b.total_cycles);
+    assert(trace_a == trace_b);
 
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "Intel NPU Phase 3 test passed\n";
-    std::cout << "  Total cycles      : " << stats.total_cycles << "\n";
-    std::cout << "  Overlap triplets  : " << stats.overlapped_triplets << "\n";
-    std::cout << "  DMA/Compute overlap % : " << stats.overlap_percent << "\n";
+    std::cout << "  Total cycles      : " << stats_a.total_cycles << "\n";
+    std::cout << "  Overlap triplets  : " << stats_a.overlapped_triplets << "\n";
+    std::cout << "  DMA/Compute overlap % : " << stats_a.overlap_percent << "\n";
     return 0;
 }

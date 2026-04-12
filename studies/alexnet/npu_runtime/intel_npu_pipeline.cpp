@@ -1,6 +1,8 @@
 #include "intel_npu_pipeline.hpp"
 
 #include <algorithm>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 
 namespace intel_npu {
@@ -20,7 +22,6 @@ PipelineCommand make_dma_command(
     command.tile_id = tile.task.global_tile_id;
     command.bank_id = tile.mem_plan.bank_id;
     command.bytes = bytes;
-    command.estimated_cycles = 0;
     command.uses_reused_input = uses_reused_input;
     command.contract = &tile;
     return command;
@@ -72,27 +73,22 @@ std::vector<PipelineCommand> OverlapLowerer::lower_stage_stream(
 
         if (i == 0) {
             if (!curr->mem_plan.reuses_producer_sram) {
-                commands.push_back(make_dma_command(
-                    next_id, PipelineCommandKind::DMA_LOAD, *curr, curr->mem_plan.input_tile.bytes, false));
+                commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_LOAD, *curr, curr->mem_plan.input_tile.bytes, false));
             }
-            commands.push_back(make_dma_command(
-                next_id, PipelineCommandKind::DMA_LOAD, *curr, curr->mem_plan.weight_tile.bytes, curr->mem_plan.reuses_producer_sram));
+            commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_LOAD, *curr, curr->mem_plan.weight_tile.bytes, curr->mem_plan.reuses_producer_sram));
         }
 
         if (next != nullptr) {
             if (!next->mem_plan.reuses_producer_sram) {
-                commands.push_back(make_dma_command(
-                    next_id, PipelineCommandKind::DMA_LOAD, *next, next->mem_plan.input_tile.bytes, false));
+                commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_LOAD, *next, next->mem_plan.input_tile.bytes, false));
             }
-            commands.push_back(make_dma_command(
-                next_id, PipelineCommandKind::DMA_LOAD, *next, next->mem_plan.weight_tile.bytes, next->mem_plan.reuses_producer_sram));
+            commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_LOAD, *next, next->mem_plan.weight_tile.bytes, next->mem_plan.reuses_producer_sram));
         }
 
         commands.push_back(make_compute_command(next_id, *curr));
 
         if (prev != nullptr && !prev->mem_plan.reuses_producer_sram) {
-            commands.push_back(make_dma_command(
-                next_id, PipelineCommandKind::DMA_STORE, *prev, prev->mem_plan.output_tile.bytes, false));
+            commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_STORE, *prev, prev->mem_plan.output_tile.bytes, false));
         }
 
         for (u32 barrier_id : curr->signal_barriers) {
@@ -103,8 +99,7 @@ std::vector<PipelineCommand> OverlapLowerer::lower_stage_stream(
     if (!tiles.empty()) {
         const auto* last = tiles.back();
         if (!last->mem_plan.reuses_producer_sram) {
-            commands.push_back(make_dma_command(
-                next_id, PipelineCommandKind::DMA_STORE, *last, last->mem_plan.output_tile.bytes, false));
+            commands.push_back(make_dma_command(next_id, PipelineCommandKind::DMA_STORE, *last, last->mem_plan.output_tile.bytes, false));
         }
     }
 
@@ -133,7 +128,6 @@ PipelineStats PipelineRuntime::run(const std::vector<PipelineCommand>& commands)
     u64 control_ready = 0;
     PipelineCommandKind prev2 = PipelineCommandKind::BARRIER_SIGNAL;
     PipelineCommandKind prev1 = PipelineCommandKind::BARRIER_SIGNAL;
-
     std::vector<std::pair<u64, u64>> dma_intervals;
     std::vector<std::pair<u64, u64>> compute_intervals;
 
@@ -141,7 +135,7 @@ PipelineStats PipelineRuntime::run(const std::vector<PipelineCommand>& commands)
         u64 dependency_ready = 0;
         if (command.contract != nullptr) {
             for (u32 barrier_id : command.contract->wait_barriers) {
-                auto it = barrier_ready_cycle_.find(barrier_id);
+                const auto it = barrier_ready_cycle_.find(barrier_id);
                 if (it == barrier_ready_cycle_.end()) {
                     throw std::runtime_error("Unknown barrier in pipeline wait");
                 }
@@ -211,8 +205,7 @@ PipelineStats PipelineRuntime::run(const std::vector<PipelineCommand>& commands)
     stats.compute_busy_cycles = merge_interval_length(compute_intervals);
     stats.dma_compute_overlap_cycles = overlap_interval_length(dma_intervals, compute_intervals);
     if (stats.total_cycles != 0) {
-        stats.overlap_percent =
-            (100.0 * static_cast<double>(stats.dma_compute_overlap_cycles)) / static_cast<double>(stats.total_cycles);
+        stats.overlap_percent = (100.0 * static_cast<double>(stats.dma_compute_overlap_cycles)) / static_cast<double>(stats.total_cycles);
     }
 
     return stats;
@@ -246,7 +239,6 @@ u64 PipelineRuntime::merge_interval_length(std::vector<std::pair<u64, u64>> inte
     u64 total = 0;
     u64 start = intervals.front().first;
     u64 end = intervals.front().second;
-
     for (std::size_t i = 1; i < intervals.size(); ++i) {
         if (intervals[i].first <= end) {
             end = std::max(end, intervals[i].second);
@@ -269,14 +261,12 @@ u64 PipelineRuntime::overlap_interval_length(
     std::size_t i = 0;
     std::size_t j = 0;
     u64 overlap = 0;
-
     while (i < lhs.size() && j < rhs.size()) {
         const u64 start = std::max(lhs[i].first, rhs[j].first);
         const u64 end = std::min(lhs[i].second, rhs[j].second);
         if (start < end) {
             overlap += end - start;
         }
-
         if (lhs[i].second < rhs[j].second) {
             ++i;
         } else {
@@ -305,15 +295,35 @@ std::vector<PipelineCommand> lower_graph_stream(
     const std::vector<ConvTileContract>& all_tiles,
     const TensorTable& tensors) {
     std::vector<PipelineCommand> commands;
-    const auto stage0 = collect_stage_tiles(all_tiles, 0);
-    const auto stage1 = collect_stage_tiles(all_tiles, 1);
-
-    const auto stage0_commands = OverlapLowerer::lower_stage_stream(stage0, tensors);
-    commands.insert(commands.end(), stage0_commands.begin(), stage0_commands.end());
-
-    const auto stage1_commands = OverlapLowerer::lower_stage_stream(stage1, tensors);
-    commands.insert(commands.end(), stage1_commands.begin(), stage1_commands.end());
+    std::set<i32> stage_ids;
+    for (const auto& tile : all_tiles) {
+        stage_ids.insert(tile.task.stage_id);
+    }
+    for (i32 stage_id : stage_ids) {
+        const auto stage_tiles = collect_stage_tiles(all_tiles, stage_id);
+        const auto stage_commands = OverlapLowerer::lower_stage_stream(stage_tiles, tensors);
+        commands.insert(commands.end(), stage_commands.begin(), stage_commands.end());
+    }
     return commands;
+}
+
+std::string dump_command_trace(const std::vector<CommandExecutionRecord>& trace) {
+    std::ostringstream oss;
+    for (const auto& record : trace) {
+        oss << record.command.command_id << ":";
+        switch (record.command.kind) {
+            case PipelineCommandKind::DMA_LOAD: oss << "DMA_LOAD"; break;
+            case PipelineCommandKind::DMA_STORE: oss << "DMA_STORE"; break;
+            case PipelineCommandKind::COMPUTE_CONV: oss << "COMPUTE_CONV"; break;
+            case PipelineCommandKind::BARRIER_WAIT: oss << "BARRIER_WAIT"; break;
+            case PipelineCommandKind::BARRIER_SIGNAL: oss << "BARRIER_SIGNAL"; break;
+        }
+        oss << " tile=" << record.command.tile_id
+            << " start=" << record.start_cycle
+            << " end=" << record.end_cycle
+            << " bank=" << record.command.bank_id << '\n';
+    }
+    return oss.str();
 }
 
 }  // namespace intel_npu

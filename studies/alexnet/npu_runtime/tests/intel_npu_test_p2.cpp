@@ -26,6 +26,16 @@ int main() {
     std::size_t waited_tiles = 0;
 
     for (const auto& contract : contracts) {
+        assert(contract.mem_plan.input_tile.alignment == hw.dma_alignment || contract.mem_plan.reuses_producer_sram);
+        assert(contract.mem_plan.weight_tile.alignment == hw.dma_alignment);
+        assert(contract.mem_plan.output_tile.alignment == hw.dma_alignment);
+        assert(contract.mem_plan.lifetime_end >= contract.mem_plan.lifetime_begin);
+        if (!contract.mem_plan.reuses_producer_sram) {
+            assert(contract.mem_plan.input_tile.offset % hw.dma_alignment == 0);
+        }
+        assert(contract.mem_plan.weight_tile.offset % hw.dma_alignment == 0);
+        assert(contract.mem_plan.output_tile.offset % hw.dma_alignment == 0);
+
         if (contract.task.stage_id == 0) {
             ++stage0_count;
             assert(!contract.signal_barriers.empty());

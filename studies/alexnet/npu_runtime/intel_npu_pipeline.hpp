@@ -3,6 +3,7 @@
 #include "intel_npu_scheduler.hpp"
 
 #include <map>
+#include <string>
 #include <vector>
 
 namespace intel_npu {
@@ -91,5 +92,7 @@ std::vector<const ConvTileContract*> collect_stage_tiles(
 std::vector<PipelineCommand> lower_graph_stream(
     const std::vector<ConvTileContract>& all_tiles,
     const TensorTable& tensors);
+
+std::string dump_command_trace(const std::vector<CommandExecutionRecord>& trace);
 
 }  // namespace intel_npu

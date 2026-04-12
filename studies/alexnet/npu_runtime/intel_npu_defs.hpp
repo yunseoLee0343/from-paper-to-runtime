@@ -74,6 +74,24 @@ enum class DataType {
 };
 
 /**
+ * @brief Activation or clamp style post-op fused onto a producer op.
+ */
+enum class PostOpKind {
+    NONE,
+    RELU,
+    CLAMP,
+};
+
+inline const char* to_string(PostOpKind post_op) {
+    switch (post_op) {
+        case PostOpKind::NONE: return "NONE";
+        case PostOpKind::RELU: return "RELU";
+        case PostOpKind::CLAMP: return "CLAMP";
+    }
+    throw std::runtime_error("Unknown post-op");
+}
+
+/**
  * @brief Return the byte size for a single tensor element.
  *
  * @param dtype Element type.
