@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter, deque
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -57,10 +58,16 @@ class ShapeBucketSelector:
 
 
 class TensorRTRuntime:
-    def __init__(self, device: str = "cuda", engine_dir: str = "./engine_cache"):
+    def __init__(
+        self,
+        device: str = "cuda",
+        engine_dir: str = "./engine_cache",
+        lookahead_window: int = 8,
+    ):
         self.device = device if device == "cuda" and torch.cuda.is_available() else "cpu"
         self.selector = ShapeBucketSelector(BUCKETS)
         self.compiled = compile_all(out_dir=engine_dir, device=self.device)
+        self.lookahead_window = max(1, lookahead_window)
         self.streams = {
             bucket.name: (torch.cuda.Stream() if self.device == "cuda" else None)
             for bucket in BUCKETS
@@ -72,24 +79,50 @@ class TensorRTRuntime:
         return self.selector.select(n, c, h, w)
 
     def build_assignments(self, table: RequestTable) -> list[BatchAssignment]:
-        grouped: dict[str, list[ImageRequest]] = {bucket.name: [] for bucket in BUCKETS}
         bucket_map = {bucket.name: bucket for bucket in BUCKETS}
-
-        for request in table.requests:
-            bucket = self.bucket_for_request(request)
-            grouped[bucket.name].append(request)
-
         assignments: list[BatchAssignment] = []
-        for bucket in BUCKETS:
-            reqs = grouped[bucket.name]
-            if not reqs:
-                continue
 
-            max_batch = bucket.max_shape[0]
-            for offset in range(0, len(reqs), max_batch):
-                assignments.append(
-                    BatchAssignment(bucket=bucket_map[bucket.name], requests=reqs[offset : offset + max_batch])
-                )
+        pending: deque[tuple[ImageRequest, ShapeBucket]] = deque()
+        cursor = 0
+        requests = table.requests
+
+        def refill_window() -> None:
+            nonlocal cursor
+            while len(pending) < self.lookahead_window and cursor < len(requests):
+                req = requests[cursor]
+                pending.append((req, self.bucket_for_request(req)))
+                cursor += 1
+
+        def choose_bucket_name() -> str:
+            counts = Counter(bucket.name for _, bucket in pending)
+            return max(
+                counts,
+                key=lambda name: (
+                    counts[name],
+                    -next(i for i, bucket in enumerate(BUCKETS) if bucket.name == name),
+                ),
+            )
+
+        refill_window()
+        while pending:
+            chosen_name = choose_bucket_name()
+            chosen_bucket = bucket_map[chosen_name]
+            max_batch = chosen_bucket.max_shape[0]
+
+            batch_reqs: list[ImageRequest] = []
+            survivors: deque[tuple[ImageRequest, ShapeBucket]] = deque()
+
+            while pending:
+                req, bucket = pending.popleft()
+                if bucket.name == chosen_name and len(batch_reqs) < max_batch:
+                    batch_reqs.append(req)
+                else:
+                    survivors.append((req, bucket))
+
+            pending = survivors
+            assignments.append(BatchAssignment(bucket=chosen_bucket, requests=batch_reqs))
+            refill_window()
+
         return assignments
 
     @torch.inference_mode()
