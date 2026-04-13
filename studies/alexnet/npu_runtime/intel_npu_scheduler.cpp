@@ -115,8 +115,46 @@ std::vector<ConvTileContract> schedule_conv_stage_tiles(
 }
 
 void build_stage_dependencies(std::vector<ConvTileContract>& producer_tiles, std::vector<ConvTileContract>& consumer_tiles) {
+    auto by_region = [](const ConvTileContract* lhs, const ConvTileContract* rhs) {
+        return std::tie(lhs->output_region.c0, lhs->output_region.h0, lhs->output_region.w0, lhs->task.seq_no) <
+               std::tie(rhs->output_region.c0, rhs->output_region.h0, rhs->output_region.w0, rhs->task.seq_no);
+    };
+
+    std::vector<ConvTileContract*> producers;
+    producers.reserve(producer_tiles.size());
+    for (auto& producer : producer_tiles) {
+        producers.push_back(&producer);
+    }
+    std::sort(producers.begin(), producers.end(), by_region);
+
+    auto consumer_key = [](const ConvTileContract& tile) {
+        return std::tie(tile.input_region.c0, tile.input_region.h0, tile.input_region.w0, tile.task.seq_no);
+    };
+    std::sort(consumer_tiles.begin(), consumer_tiles.end(), [&](const ConvTileContract& lhs, const ConvTileContract& rhs) {
+        return consumer_key(lhs) < consumer_key(rhs);
+    });
+
+    std::size_t window_begin = 0;
     for (auto& consumer : consumer_tiles) {
-        for (auto& producer : producer_tiles) {
+        while (window_begin < producers.size()) {
+            const auto& region = producers[window_begin]->output_region;
+            const bool definitely_before_h = region.h1 <= consumer.input_region.h0;
+            const bool definitely_before_c = region.c1 <= consumer.input_region.c0;
+            if (!(definitely_before_h || definitely_before_c)) {
+                break;
+            }
+            ++window_begin;
+        }
+
+        for (std::size_t i = window_begin; i < producers.size(); ++i) {
+            auto& producer = *producers[i];
+
+            if (producer.output_region.c0 >= consumer.input_region.c1) {
+                break;
+            }
+            if (producer.output_region.h0 >= consumer.input_region.h1) {
+                break;
+            }
             if (!overlaps_spatial(producer.output_region, consumer.input_region)) {
                 continue;
             }
@@ -367,4 +405,5 @@ GraphDesc make_compiler_demo_graph() {
 }
 
 }  // namespace intel_npu
+
 

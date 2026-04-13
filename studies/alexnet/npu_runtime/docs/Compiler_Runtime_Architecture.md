@@ -46,6 +46,8 @@ The scheduler no longer acts as the first compiler stage. It consumes canonical 
 
 Fallback stages are kept explicit at the compiler level even if they are not executed by the simulator yet.
 
+Dependency discovery across adjacent conv stages is now ordered by channel and spatial origin before overlap matching. That keeps barrier construction deterministic while trimming unnecessary producer rescans for later consumer tiles.
+
 ### Memory Planning
 
 `MemoryPlanningPass` owns SRAM bank selection, aligned offsets, simple lifetime metadata, and producer-consumer SRAM reuse decisions.
@@ -110,3 +112,5 @@ These boundaries are intentionally left explicit in code and docs.
 `gpu_runtime` is a vertical-slice backend experiment.
 
 `npu_runtime` is now a compiler-style middle layer plus descriptorized runtime skeleton. The point is to make graph transformation, tiling legality, SRAM planning, descriptor emission, and future backend binding all visible and inspectable.
+
+
