@@ -1,0 +1,4 @@
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+56.9,1458365,422,3455.8,3520.0,2880,4800,542.5,sm80_xmma_fprop_implicit_gemm_f32f32_f32f32_f32_nchwkcrs_nchw_tilesize32x32x8_stage3_warpsize1x2x1_g1_ffma_aligna4_alignc4_execute_kernel_trt
+26.6,681937,211,3231.9,3232.0,3199,3425,25.0,sm50_xmma_conv_fprop_fused_conv_act_fp32_NCHW_fp32_NCHW_KCRS_fp32_fp32_fp32_Accfloat_1_1_cC1_dC1_srcVec1_fltVec2_2_TP3_TQ7_C8_R3_S3_U1_V1_execute_kernel_trt
+16.4,420787,422,997.1,992.0,960,1375,25.1,"void genericReformat::copyVectorizedKernel<double, float, float, (bool)1, (bool)0, (int)1>(unsigned int, const void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, const float *, void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, const float *)"

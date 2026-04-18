@@ -1,0 +1,276 @@
+{
+  "env": {
+    "torch_version": "2.6.0+cu124",
+    "quant_backend": "x86",
+    "cuda_available": true
+  },
+  "v1": {
+    "block_name": "ResNetV1_BasicBlock",
+    "float_calibration_stats": {
+      "conv1_out": {
+        "min": -2.2704712748527527,
+        "max": 2.3085276782512665,
+        "mean": -0.0003713153964781668,
+        "std": 0.5666738897562027,
+        "p50": -0.001345481753560307,
+        "p90": 0.7236893586814404,
+        "p99": 1.3258185684680939,
+        "p999": 1.77402912825346
+      },
+      "conv2_out": {
+        "min": -1.0532174743711948,
+        "max": 0.9541254416108131,
+        "mean": 0.004384644198580645,
+        "std": 0.23757567256689072,
+        "p50": 0.007839125057216734,
+        "p90": 0.30199997313320637,
+        "p99": 0.553229458630085,
+        "p999": 0.7430047616362572
+      },
+      "skip_out": {
+        "min": -2.440583258867264,
+        "max": 2.4357553124427795,
+        "mean": 0.000974532107647974,
+        "std": 0.5741092674434185,
+        "p50": 0.0010931409910881484,
+        "p90": 0.7269503958523273,
+        "p99": 1.3725372701883316,
+        "p999": 1.8551382720470428
+      },
+      "pre_add_main": {
+        "min": -1.0532122068107128,
+        "max": 0.9541206620633602,
+        "mean": 0.0043846221815329045,
+        "std": 0.23757448233664036,
+        "p50": 0.007839085796149448,
+        "p90": 0.3019984606653452,
+        "p99": 0.5532266832888126,
+        "p999": 0.743001040071249
+      },
+      "pre_add_skip": {
+        "min": -2.440583258867264,
+        "max": 2.4357553124427795,
+        "mean": 0.000974532107647974,
+        "std": 0.5741092674434185,
+        "p50": 0.0010931409910881484,
+        "p90": 0.7269503958523273,
+        "p99": 1.3725372701883316,
+        "p999": 1.8551382720470428
+      },
+      "post_add": {
+        "min": -2.560501977801323,
+        "max": 2.6517149060964584,
+        "mean": 0.0053591543837683275,
+        "std": 0.6188466176390648,
+        "p50": 0.010083473098347895,
+        "p90": 0.7872642017900944,
+        "p99": 1.4617552608251572,
+        "p999": 1.9972230270504951
+      },
+      "post_relu": {
+        "min": 0.0,
+        "max": 2.6517149060964584,
+        "mean": 0.24820281472057104,
+        "std": 0.36244432255625725,
+        "p50": 0.010155348398257047,
+        "p90": 0.7872642017900944,
+        "p99": 1.4617552608251572,
+        "p999": 1.9972230270504951
+      }
+    },
+    "ptq": {
+      "prepared_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_conv1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_2,), kwargs = {})\n    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv2,), kwargs = {})\n    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_3, %activation_post_process_1), kwargs = {})\n    %block_relu_1 : [num_users=1] = call_module[target=block.relu](args = (%add,), kwargs = {})\n    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_relu_1,), kwargs = {})\n    return activation_post_process_4",
+      "converted_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]\n    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]\n    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})\n    %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]\n    %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]\n    %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})\n    %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})\n    return dequantize_4",
+      "graph_metrics": {
+        "graph_num_nodes": 12,
+        "standalone_add_count": 0,
+        "quantized_add_relu_count": 1,
+        "quantized_add_count": 0,
+        "quantize_per_tensor_count": 1,
+        "dequantize_count": 1,
+        "reformat_count": null,
+        "backend_final_layer_count": null
+      },
+      "float_vs_quant_mse": 0.00016067182878032327,
+      "float_vs_quant_cosine": 0.9995904564857483
+    },
+    "qat": {
+      "prepared_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_conv1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_2,), kwargs = {})\n    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv2,), kwargs = {})\n    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_3, %activation_post_process_1), kwargs = {})\n    %block_relu_1 : [num_users=1] = call_module[target=block.relu](args = (%add,), kwargs = {})\n    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_relu_1,), kwargs = {})\n    return activation_post_process_4",
+      "converted_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]\n    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]\n    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})\n    %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]\n    %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]\n    %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})\n    %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})\n    return dequantize_4",
+      "graph_metrics": {
+        "graph_num_nodes": 12,
+        "standalone_add_count": 0,
+        "quantized_add_relu_count": 1,
+        "quantized_add_count": 0,
+        "quantize_per_tensor_count": 1,
+        "dequantize_count": 1,
+        "reformat_count": null,
+        "backend_final_layer_count": null
+      },
+      "loss_history": [
+        0.0010169048327952623, 0.001382943824864924, 0.0020611006766557693,
+        0.003673057770356536, 0.005813512485474348, 0.008195510134100914,
+        0.01106925867497921, 0.014504767954349518
+      ],
+      "float_vs_qat_fake_mse": 0.018711529672145844,
+      "float_vs_qat_fake_cosine": 0.9706336259841919,
+      "float_vs_qat_converted_mse": 0.018839135766029358,
+      "float_vs_qat_converted_cosine": 0.9705892205238342
+    },
+    "comparison_metrics": {
+      "branch_ratio_p99": 2.4809672267232217,
+      "branch_ratio_std": 2.4165443266331614,
+      "post_add_p99_over_max_preadd_p99": 1.0650022353306177,
+      "ptq_convert_has_add_relu": true,
+      "qat_convert_has_add_relu": true,
+      "ptq_backend_final_layer_count": null,
+      "qat_backend_final_layer_count": null,
+      "ptq_standalone_add_count": 0,
+      "qat_standalone_add_count": 0,
+      "ptq_reformat_count": null,
+      "qat_reformat_count": null
+    },
+    "structure_score_lower_is_better": 5.9625137886870005
+  },
+  "v2": {
+    "block_name": "ResNetV2_BasicBlock",
+    "float_calibration_stats": {
+      "conv1_out": {
+        "min": -1.4442081153392792,
+        "max": 1.5575866922736168,
+        "mean": 0.05739020695909858,
+        "std": 0.354028781875968,
+        "p50": 0.056074990425258875,
+        "p90": 0.5088071394711733,
+        "p99": 0.8964284732937813,
+        "p999": 1.1956825256347656
+      },
+      "conv2_out": {
+        "min": -0.5937674045562744,
+        "max": 0.6424959264695644,
+        "mean": 0.023532796883955598,
+        "std": 0.16029588971287012,
+        "p50": 0.02276270487345755,
+        "p90": 0.23027339857071638,
+        "p99": 0.395156467333436,
+        "p999": 0.5107654985040426
+      },
+      "skip_out": {
+        "min": -2.5335847288370132,
+        "max": 2.6180067658424377,
+        "mean": -0.00047413459105882794,
+        "std": 0.552028339356184,
+        "p50": -0.0008107672438200098,
+        "p90": 0.6874432265758514,
+        "p99": 1.3508074432611465,
+        "p999": 1.8964439257979393
+      },
+      "pre_add_main": {
+        "min": -0.5937674045562744,
+        "max": 0.6424959264695644,
+        "mean": 0.023532796883955598,
+        "std": 0.16029588971287012,
+        "p50": 0.02276270487345755,
+        "p90": 0.23027339857071638,
+        "p99": 0.395156467333436,
+        "p999": 0.5107654985040426
+      },
+      "pre_add_skip": {
+        "min": -2.5335847288370132,
+        "max": 2.6180067658424377,
+        "mean": -0.00047413459105882794,
+        "std": 0.552028339356184,
+        "p50": -0.0008107672438200098,
+        "p90": 0.6874432265758514,
+        "p99": 1.3508074432611465,
+        "p999": 1.8964439257979393
+      },
+      "post_add": {
+        "min": -2.580444648861885,
+        "max": 2.7390241622924805,
+        "mean": 0.02305866137612611,
+        "std": 0.5751979909837246,
+        "p50": 0.022974942752625793,
+        "p90": 0.7418008297681808,
+        "p99": 1.414186730980873,
+        "p999": 1.9589063301682472
+      },
+      "post_relu": {
+        "min": -2.580444648861885,
+        "max": 2.7390241622924805,
+        "mean": 0.02305866137612611,
+        "std": 0.5751979909837246,
+        "p50": 0.022974942752625793,
+        "p90": 0.7418008297681808,
+        "p99": 1.414186730980873,
+        "p999": 1.9589063301682472
+      }
+    },
+    "ptq": {
+      "prepared_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})\n    %block_bn1 : [num_users=1] = call_module[target=block.bn1](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_bn1,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_2,), kwargs = {})\n    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_3,), kwargs = {})\n    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_conv2,), kwargs = {})\n    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_4, %activation_post_process_1), kwargs = {})\n    %activation_post_process_5 : [num_users=1] = call_module[target=activation_post_process_5](args = (%add,), kwargs = {})\n    return activation_post_process_5",
+      "converted_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]\n    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]\n    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})\n    %block_bn1 : [num_users=1] = call_module[target=block.bn1](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%block_bn1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})\n    %block_scale_0 : [num_users=1] = get_attr[target=block_scale_0]\n    %block_zero_point_0 : [num_users=1] = get_attr[target=block_zero_point_0]\n    %add_1 : [num_users=1] = call_function[target=torch.ops.quantized.add](args = (%block_conv2, %block_downsample_0, %block_scale_0, %block_zero_point_0), kwargs = {})\n    %dequantize_5 : [num_users=1] = call_method[target=dequantize](args = (%add_1,), kwargs = {})\n    return dequantize_5",
+      "graph_metrics": {
+        "graph_num_nodes": 13,
+        "standalone_add_count": 0,
+        "quantized_add_relu_count": 0,
+        "quantized_add_count": 1,
+        "quantize_per_tensor_count": 1,
+        "dequantize_count": 1,
+        "reformat_count": null,
+        "backend_final_layer_count": null
+      },
+      "float_vs_quant_mse": 0.0004169813764747232,
+      "float_vs_quant_cosine": 0.9993789196014404
+    },
+    "qat": {
+      "prepared_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})\n    %block_bn1 : [num_users=1] = call_module[target=block.bn1](args = (%activation_post_process_0,), kwargs = {})\n    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_bn1,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_2,), kwargs = {})\n    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_3,), kwargs = {})\n    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_conv2,), kwargs = {})\n    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_4, %activation_post_process_1), kwargs = {})\n    %activation_post_process_5 : [num_users=1] = call_module[target=activation_post_process_5](args = (%add,), kwargs = {})\n    return activation_post_process_5",
+      "converted_graph": "graph():\n    %x : [num_users=1] = placeholder[target=x]\n    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]\n    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]\n    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})\n    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})\n    %block_bn1 : [num_users=1] = call_module[target=block.bn1](args = (%quantize_per_tensor,), kwargs = {})\n    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%block_bn1,), kwargs = {})\n    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})\n    %block_scale_0 : [num_users=1] = get_attr[target=block_scale_0]\n    %block_zero_point_0 : [num_users=1] = get_attr[target=block_zero_point_0]\n    %add_1 : [num_users=1] = call_function[target=torch.ops.quantized.add](args = (%block_conv2, %block_downsample_0, %block_scale_0, %block_zero_point_0), kwargs = {})\n    %dequantize_5 : [num_users=1] = call_method[target=dequantize](args = (%add_1,), kwargs = {})\n    return dequantize_5",
+      "graph_metrics": {
+        "graph_num_nodes": 13,
+        "standalone_add_count": 0,
+        "quantized_add_relu_count": 0,
+        "quantized_add_count": 1,
+        "quantize_per_tensor_count": 1,
+        "dequantize_count": 1,
+        "reformat_count": null,
+        "backend_final_layer_count": null
+      },
+      "loss_history": [
+        0.0012134398566558957, 0.0015344676794484258, 0.0023827743716537952,
+        0.003764792811125517, 0.00560950068756938, 0.007986023090779781,
+        0.010274718515574932, 0.012761021964251995
+      ],
+      "float_vs_qat_fake_mse": 0.014962912537157536,
+      "float_vs_qat_fake_cosine": 0.9905027151107788,
+      "float_vs_qat_converted_mse": 0.01499265432357788,
+      "float_vs_qat_converted_cosine": 0.990536093711853
+    },
+    "comparison_metrics": {
+      "branch_ratio_p99": 3.418411578523717,
+      "branch_ratio_std": 3.44380844914367,
+      "post_add_p99_over_max_preadd_p99": 1.0469195576585772,
+      "ptq_convert_has_add_relu": false,
+      "qat_convert_has_add_relu": false,
+      "ptq_backend_final_layer_count": null,
+      "qat_backend_final_layer_count": null,
+      "ptq_standalone_add_count": 0,
+      "qat_standalone_add_count": 0,
+      "ptq_reformat_count": null,
+      "qat_reformat_count": null
+    },
+    "structure_score_lower_is_better": 11.909139585325963
+  },
+  "summary": {
+    "winner_by_current_score": "v1",
+    "note": "Current score uses float branch mismatch + PTQ/QAT FX converted graph cleanliness only. backend_final_layer_count / standalone add / reformat must be filled from backend compile logs.",
+    "wanted_compare_metrics": [
+      "branch_ratio_p99 = pre_add_skip.p99 / pre_add_main.p99",
+      "branch_ratio_std = pre_add_skip.std / pre_add_main.std",
+      "post_add.p99 / max(pre_add_main.p99, pre_add_skip.p99)",
+      "convert \ud6c4 add_relu \uc5ec\ubd80",
+      "backend \ucd5c\uc885 layer \uc218",
+      "standalone add \uc218",
+      "reformat \uc218"
+    ]
+  }
+}

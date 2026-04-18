@@ -1,0 +1,9 @@
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+35.0,793644,202,3928.9,3936.5,3232,4704,567.4,trt_ampere_int8x4_icudnn_int8x4_128x32_relu_small_c32_nn_v1
+26.1,592124,101,5862.6,5856.0,5824,6497,89.4,sm72_xmma_convolution_groupSdcrr_INT8NCxHW32_R3_S3_U1_V1_CtaSize64_ThrdOuterLoop1_CVecSplit2_GroupSize16_InnerLoop1_execute_kernel_trt
+12.9,291732,202,1444.2,1441.0,1376,1505,33.3,"void nvinfer1::rt::cuda::padBiasWeights<float, (int)32>(nvinfer1::rt::cuda::PadBiasLaunchParams<T1>)"
+9.0,204774,202,1013.7,1024.0,960,1281,26.2,"void genericReformat::copyVectorizedKernel<double, float, float, (bool)1, (bool)0, (int)1>(unsigned int, const void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, const float *, void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, const float *)"
+6.8,154759,101,1532.3,1536.0,1504,1632,15.8,"void genericReformat::copyPackedKernel<signed char, float, (bool)1, (bool)0, genericReformat::IdentityCoordMapper<(int)4>, (int)4>(unsigned int, unsigned int, const void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, int, int, const float *, void *, genericReformat::ArrayN<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayNWithReducedDivisors<T6>, genericReformat::ArrayN<T6>, int, int, int, const float *, T5)"
+5.1,116491,101,1153.4,1152.0,1120,1440,32.0,"cuInt8::nchwToNcqhw4(const float *, unsigned int *, int, int, int, int, int, int, int, const float *, cuInt8::ReducedDivisorParameters)"
+4.8,108034,101,1069.6,1056.0,1055,1089,15.9,__myl_TraResSliCasMulTraResSliCasMulAddMulMinMaxRouMinMaxRouCasMaxRepConResTra_0xd2bb1378b0565549cb6b5dd04a4e3c27
+0.1,2816,2,1408.0,1408.0,1408,1408,0.0,"void cask_trt::computeOffsetsKernel<(bool)0, (bool)0>(cask_trt::ComputeOffsetsParams)"

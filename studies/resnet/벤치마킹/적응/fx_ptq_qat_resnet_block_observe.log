@@ -1,0 +1,285 @@
+
+====================================================================================================
+Environment
+====================================================================================================
+torch version: 2.6.0+cu124
+quant backend: x86
+cuda available: True
+NOTE: FX/PTQ/QAT observation is run on CPU backend on purpose.
+
+====================================================================================================
+FLOAT calibration stats
+====================================================================================================
+{
+  "conv1_out": {
+    "min": -2.319219797849655,
+    "max": 2.3823787569999695,
+    "mean": 0.0006371132767526433,
+    "std": 0.573330219835043,
+    "p50": 0.0012319413508521393,
+    "p90": 0.7329244539141655,
+    "p99": 1.3437794595956802,
+    "p999": 1.795576386153698
+  },
+  "conv2_out": {
+    "min": -0.8112610056996346,
+    "max": 0.9380456693470478,
+    "mean": -0.002442745119878964,
+    "std": 0.21035685203969479,
+    "p50": -0.006685070227831602,
+    "p90": 0.26723639108240604,
+    "p99": 0.5133631620556116,
+    "p999": 0.6995203383266926
+  },
+  "skip_out": {
+    "min": -2.708474889397621,
+    "max": 2.6743158102035522,
+    "mean": 0.003338433860335499,
+    "std": 0.5901864990592003,
+    "p50": 0.0031167202760116197,
+    "p90": 0.740153145045042,
+    "p99": 1.4337409511208534,
+    "p999": 2.013239771127701
+  },
+  "pre_add_main": {
+    "min": -0.8112569376826286,
+    "max": 0.9380409680306911,
+    "mean": -0.0024427327580269775,
+    "std": 0.21035579778254032,
+    "p50": -0.006685036583803594,
+    "p90": 0.26723505556583405,
+    "p99": 0.5133605934679508,
+    "p999": 0.6995168477296829
+  },
+  "pre_add_skip": {
+    "min": -2.708474889397621,
+    "max": 2.6743158102035522,
+    "mean": 0.003338433860335499,
+    "std": 0.5901864990592003,
+    "p50": 0.0031167202760116197,
+    "p90": 0.740153145045042,
+    "p99": 1.4337409511208534,
+    "p999": 2.013239771127701
+  },
+  "post_add": {
+    "min": -2.7532547265291214,
+    "max": 2.8025442510843277,
+    "mean": 0.0008957011013990268,
+    "std": 0.6263593025505543,
+    "p50": 4.8642112233210355e-05,
+    "p90": 0.7896908335387707,
+    "p99": 1.5206129774451256,
+    "p999": 2.0867664366960526
+  },
+  "post_relu": {
+    "min": 0.0,
+    "max": 2.8025442510843277,
+    "mean": 0.24702381808310747,
+    "std": 0.36946867778897285,
+    "p50": 0.003498982056044042,
+    "p90": 0.7896908335387707,
+    "p99": 1.5206129774451256,
+    "p999": 2.0867664366960526
+  }
+}
+
+====================================================================================================
+PTQ prepare_fx / convert_fx  (backend=x86)
+====================================================================================================
+
+====================================================================================================
+PTQ prepared FX graph
+====================================================================================================
+graph():
+    %x : [num_users=1] = placeholder[target=x]
+    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})
+    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})
+    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})
+    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_0,), kwargs = {})
+    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_conv1,), kwargs = {})
+    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_2,), kwargs = {})
+    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv2,), kwargs = {})
+    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_3, %activation_post_process_1), kwargs = {})
+    %block_relu_1 : [num_users=1] = call_module[target=block.relu](args = (%add,), kwargs = {})
+    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_relu_1,), kwargs = {})
+    return activation_post_process_4
+activation_post_process_0                          HistogramObserver
+block.downsample.0                                 Conv2d
+block.conv1                                        ConvReLU2d
+block.conv1.0                                      Conv2d
+block.conv1.1                                      ReLU
+block.conv2                                        Conv2d
+activation_post_process_1                          HistogramObserver
+activation_post_process_2                          HistogramObserver
+activation_post_process_3                          HistogramObserver
+activation_post_process_4                          HistogramObserver
+
+====================================================================================================
+PTQ observer modules
+====================================================================================================
+activation_post_process_0                                    HistogramObserver
+activation_post_process_1                                    HistogramObserver
+activation_post_process_2                                    HistogramObserver
+activation_post_process_3                                    HistogramObserver
+activation_post_process_4                                    HistogramObserver
+
+====================================================================================================
+PTQ converted FX graph
+====================================================================================================
+graph():
+    %x : [num_users=1] = placeholder[target=x]
+    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]
+    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]
+    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})
+    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})
+    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})
+    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})
+    %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]
+    %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]
+    %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})
+    %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})
+    return dequantize_4
+
+====================================================================================================
+PTQ converted graph add-region
+====================================================================================================
+[around node 9: %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})]
+  03: %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})
+  04: %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})
+  05: %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})
+  06: %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})
+  07: %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]
+  08: %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]
+  09: %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})
+  10: %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})
+  11: return dequantize_4
+--------------------------------------------------------------------------------
+block.downsample.0                                 Conv2d
+block.conv1                                        ConvReLU2d
+block.conv2                                        Conv2d
+
+====================================================================================================
+PTQ float vs quant output error
+====================================================================================================
+mse       : 0.00017078778182622045
+cosine    : 0.9995695352554321
+
+====================================================================================================
+QAT prepare_qat_fx / convert_fx  (backend=x86)
+====================================================================================================
+
+====================================================================================================
+QAT prepared FX graph
+====================================================================================================
+graph():
+    %x : [num_users=1] = placeholder[target=x]
+    %activation_post_process_0 : [num_users=2] = call_module[target=activation_post_process_0](args = (%x,), kwargs = {})
+    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%activation_post_process_0,), kwargs = {})
+    %activation_post_process_1 : [num_users=1] = call_module[target=activation_post_process_1](args = (%block_downsample_0,), kwargs = {})
+    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%activation_post_process_0,), kwargs = {})
+    %activation_post_process_2 : [num_users=1] = call_module[target=activation_post_process_2](args = (%block_conv1,), kwargs = {})
+    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%activation_post_process_2,), kwargs = {})
+    %activation_post_process_3 : [num_users=1] = call_module[target=activation_post_process_3](args = (%block_conv2,), kwargs = {})
+    %add : [num_users=1] = call_function[target=operator.add](args = (%activation_post_process_3, %activation_post_process_1), kwargs = {})
+    %block_relu_1 : [num_users=1] = call_module[target=block.relu](args = (%add,), kwargs = {})
+    %activation_post_process_4 : [num_users=1] = call_module[target=activation_post_process_4](args = (%block_relu_1,), kwargs = {})
+    return activation_post_process_4
+activation_post_process_0                          FusedMovingAvgObsFakeQuantize
+activation_post_process_0.activation_post_process  MovingAverageMinMaxObserver
+block.downsample.0                                 ConvBn2d
+block.downsample.0.bn                              BatchNorm2d
+block.downsample.0.weight_fake_quant               FusedMovingAvgObsFakeQuantize
+block.downsample.0.weight_fake_quant.activation_post_process MovingAveragePerChannelMinMaxObserver
+block.conv1                                        ConvBnReLU2d
+block.conv1.bn                                     BatchNorm2d
+block.conv1.weight_fake_quant                      FusedMovingAvgObsFakeQuantize
+block.conv1.weight_fake_quant.activation_post_process MovingAveragePerChannelMinMaxObserver
+block.conv2                                        ConvBn2d
+block.conv2.bn                                     BatchNorm2d
+block.conv2.weight_fake_quant                      FusedMovingAvgObsFakeQuantize
+block.conv2.weight_fake_quant.activation_post_process MovingAveragePerChannelMinMaxObserver
+block.relu                                         ReLU
+activation_post_process_1                          FusedMovingAvgObsFakeQuantize
+activation_post_process_1.activation_post_process  MovingAverageMinMaxObserver
+activation_post_process_2                          FusedMovingAvgObsFakeQuantize
+activation_post_process_2.activation_post_process  MovingAverageMinMaxObserver
+activation_post_process_3                          FusedMovingAvgObsFakeQuantize
+activation_post_process_3.activation_post_process  MovingAverageMinMaxObserver
+activation_post_process_4                          FusedMovingAvgObsFakeQuantize
+activation_post_process_4.activation_post_process  MovingAverageMinMaxObserver
+
+====================================================================================================
+QAT training proxy loss
+====================================================================================================
+step 00: 0.00092125
+step 01: 0.00121844
+step 02: 0.00205260
+step 03: 0.00351387
+step 04: 0.00566568
+step 05: 0.00788360
+step 06: 0.01131658
+step 07: 0.01505322
+
+====================================================================================================
+QAT fake quant modules
+====================================================================================================
+activation_post_process_0                                    type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.06643553078174591] zero_point(sample)=[59]
+block.downsample.0.weight_fake_quant                         type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.002684111939743161, 0.0022601038217544556, 0.002585119102150202, 0.002765199402347207, 0.0025976209435611963, 0.0023384992964565754, 0.002520940499380231, 0.0021072840318083763] zero_point(sample)=[0, 0, 0, 0, 0, 0, 0, 0]
+block.conv1.weight_fake_quant                                type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.000931791088078171, 0.0009273246978409588, 0.0008970399503596127, 0.0009268693393096328, 0.0009374514920637012, 0.0009356800001114607, 0.0009304478880949318, 0.000935956952162087] zero_point(sample)=[0, 0, 0, 0, 0, 0, 0, 0]
+block.conv2.weight_fake_quant                                type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.0006614454905502498, 0.000659778481349349, 0.0006641789223067462, 0.0006625086534768343, 0.0006544924108311534, 0.0006600816268473864, 0.0006575628067366779, 0.0006591846467927098] zero_point(sample)=[0, 0, 0, 0, 0, 0, 0, 0]
+activation_post_process_1                                    type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.06195196881890297] zero_point(sample)=[64]
+activation_post_process_2                                    type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.031101981177926064] zero_point(sample)=[0]
+activation_post_process_3                                    type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.06335180252790451] zero_point(sample)=[61]
+activation_post_process_4                                    type=FusedMovingAvgObsFakeQuantize scale(sample)=[0.043939195573329926] zero_point(sample)=[0]
+
+====================================================================================================
+Float vs QAT-fake output error
+====================================================================================================
+mse       : 0.015155711211264133
+cosine    : 0.979946494102478
+
+====================================================================================================
+QAT converted FX graph
+====================================================================================================
+graph():
+    %x : [num_users=1] = placeholder[target=x]
+    %block_downsample_0_input_scale_0 : [num_users=1] = get_attr[target=block_downsample_0_input_scale_0]
+    %block_downsample_0_input_zero_point_0 : [num_users=1] = get_attr[target=block_downsample_0_input_zero_point_0]
+    %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})
+    %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})
+    %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})
+    %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})
+    %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]
+    %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]
+    %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})
+    %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})
+    return dequantize_4
+
+====================================================================================================
+QAT converted graph add-region
+====================================================================================================
+[around node 9: %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})]
+  03: %quantize_per_tensor : [num_users=2] = call_function[target=torch.quantize_per_tensor](args = (%x, %block_downsample_0_input_scale_0, %block_downsample_0_input_zero_point_0, torch.quint8), kwargs = {})
+  04: %block_downsample_0 : [num_users=1] = call_module[target=block.downsample.0](args = (%quantize_per_tensor,), kwargs = {})
+  05: %block_conv1 : [num_users=1] = call_module[target=block.conv1](args = (%quantize_per_tensor,), kwargs = {})
+  06: %block_conv2 : [num_users=1] = call_module[target=block.conv2](args = (%block_conv1,), kwargs = {})
+  07: %block_relu_scale_0 : [num_users=1] = get_attr[target=block_relu_scale_0]
+  08: %block_relu_zero_point_0 : [num_users=1] = get_attr[target=block_relu_zero_point_0]
+  09: %add_relu : [num_users=1] = call_function[target=torch.ops.quantized.add_relu](args = (%block_conv2, %block_downsample_0, %block_relu_scale_0, %block_relu_zero_point_0), kwargs = {})
+  10: %dequantize_4 : [num_users=1] = call_method[target=dequantize](args = (%add_relu,), kwargs = {})
+  11: return dequantize_4
+--------------------------------------------------------------------------------
+block.downsample.0                                 Conv2d
+block.conv1                                        ConvReLU2d
+block.conv2                                        Conv2d
+
+====================================================================================================
+Float vs QAT-converted output error
+====================================================================================================
+mse       : 0.015240832231938839
+cosine    : 0.9801809787750244
+
+====================================================================================================
+Save concise report files
+====================================================================================================
+Saved: float_calibration_stats.json, README_observe.txt

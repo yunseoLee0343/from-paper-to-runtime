@@ -1,0 +1,19 @@
+torch=2.6.0+cu124, backend=x86, cuda_available=True
+NOTE: backend compile metrics (final layer count / standalone add / reformat) are placeholders here.
+      Fill them later from TensorRT/OpenVINO compile logs if needed.
+
+{
+  "winner_by_current_score": "v1",
+  "note": "Current score uses float branch mismatch + PTQ/QAT FX converted graph cleanliness only. backend_final_layer_count / standalone add / reformat must be filled from backend compile logs.",
+  "wanted_compare_metrics": [
+    "branch_ratio_p99 = pre_add_skip.p99 / pre_add_main.p99",
+    "branch_ratio_std = pre_add_skip.std / pre_add_main.std",
+    "post_add.p99 / max(pre_add_main.p99, pre_add_skip.p99)",
+    "convert \ud6c4 add_relu \uc5ec\ubd80",
+    "backend \ucd5c\uc885 layer \uc218",
+    "standalone add \uc218",
+    "reformat \uc218"
+  ]
+}
+
+Saved: result.json
